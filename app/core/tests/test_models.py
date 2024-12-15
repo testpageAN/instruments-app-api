@@ -1,8 +1,12 @@
 """
 Tests for models.
 """
+from datetime import datetime
+
 from django.test import TestCase
 from django.contrib.auth import get_user_model
+
+from core import models
 
 
 class ModelTests(TestCase):
@@ -46,3 +50,25 @@ class ModelTests(TestCase):
 
         self.assertTrue(user.is_superuser)
         self.assertTrue(user.is_staff)
+
+    def test_create_instrument(self):
+        """Test creating a instrument is successful."""
+        user = get_user_model().objects.create_user(
+            'test@example.com',
+            'testpass123',
+        )
+        instrument = models.Instrument.objects.create(
+            user=user,
+            tag='11-FV-01',
+            unit=1100,
+            description='Sample instrument description.',
+            type="Sample type",
+            manufacturer="Sample manufacturer",
+            serial_no="serial123",
+            interval=100,
+            created_at=datetime.now(),
+            last_checked=datetime(2020, 1, 1),
+            notes="Some notes",
+        )
+
+        self.assertEqual(str(instrument), instrument.tag)
