@@ -2,6 +2,7 @@
 Database models.
 """
 from django.conf import settings
+from datetime import timedelta
 from django.db import models
 from django.contrib.auth.models import (
     AbstractBaseUser,
@@ -65,3 +66,9 @@ class Instrument(models.Model):
 
     def __str__(self):
         return self.tag
+
+    @property
+    def next_check(self):
+        """Υπολογίζει την ημερομηνία για το επόμενο check."""
+        return self.last_checked + timedelta(days=self.interval)
+
