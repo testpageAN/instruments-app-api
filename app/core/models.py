@@ -71,4 +71,3 @@ class Instrument(models.Model):
     def next_check(self):
         """Υπολογίζει την ημερομηνία για το επόμενο check."""
         return self.last_checked + timedelta(days=self.interval)
-
