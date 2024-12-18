@@ -23,3 +23,11 @@ class InstrumentSerializer(serializers.ModelSerializer):
                   'notes',
                   'link']
         read_only_fields = ['id']
+
+
+class InstrumentDetailSerializer(InstrumentSerializer):
+    """Serializer for Instrument detail view."""
+
+
+class Meta(InstrumentSerializer.Meta):
+    fields = InstrumentSerializer.Meta.fields + ['description_2']

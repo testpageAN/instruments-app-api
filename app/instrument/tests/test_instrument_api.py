@@ -13,10 +13,18 @@ from rest_framework.test import APIClient
 
 from core.models import Instrument
 
-from instrument.serializers import InstrumentSerializer
+from instrument.serializers import (
+    InstrumentSerializer,
+    InstrumentDetailSerializer,
+)
 
 
 INSTRUMENTS_URL = reverse('instrument:instrument-list')
+
+
+def detail_url(instrument_id):
+    """Create and return a instrument detail URL."""
+    return reverse('instrument:instrument-detail', args=[instrument_id])
 
 
 def create_instrument(user, **params):
@@ -93,4 +101,14 @@ class PrivateInstrumentApiTests(TestCase):
         instruments = Instrument.objects.filter(user=self.user)
         serializer = InstrumentSerializer(instruments, many=True)
         self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data, serializer.data)
+
+    def test_get_instrument_detail(self):
+        """Test get instrument detail."""
+        instrument = create_instrument(user=self.user)
+
+        url = detail_url(instrument.id)
+        res = self.client.get(url)
+
+        serializer = InstrumentDetailSerializer(instrument)
         self.assertEqual(res.data, serializer.data)

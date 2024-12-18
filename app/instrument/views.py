@@ -11,7 +11,8 @@ from instrument import serializers
 
 class InstrumentViewSet(viewsets.ModelViewSet):
     """View for manage instrument APIs."""
-    serializer_class = serializers.InstrumentSerializer
+    # serializer_class = serializers.InstrumentSerializer
+    serializer_class = serializers.InstrumentDetailSerializer
     queryset = Instrument.objects.all()
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
@@ -19,3 +20,10 @@ class InstrumentViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         """Retrieve instruments for authenticated user."""
         return self.queryset.filter(user=self.request.user).order_by('-id')
+
+    def get_serializer_class(self):
+        """Return the serializer class for request."""
+        if self.action == 'list':
+            return serializers.InstrumentSerializer
+
+        return self.serializer_class
