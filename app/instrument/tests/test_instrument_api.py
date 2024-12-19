@@ -3,6 +3,7 @@ Tests for instrument APIs.
 """
 from decimal import Decimal  # noqa
 from datetime import datetime
+from django.utils import timezone
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
@@ -36,13 +37,10 @@ def create_instrument(user, **params):
         'type': "CONTROL VALVE",
         'manufacturer': "EMERSON",
         'serial_no': "123456EU",
-        'interval': "100",
-        'created_at': datetime(2020, 1, 1),
-        'last_checked': datetime(2021, 1, 1),
-        'notes': """
-        01/01/2020: Created
-        01/01/2021: Changed
-        """,
+        'interval': 100,
+        'created_at': timezone.make_aware(datetime(2020, 1, 1)),
+        'last_checked': timezone.make_aware(datetime(2021, 1, 1)),
+        'notes': "01/01/2020: Created" + "\n" + "01/01/2021: Changed" + "\n",
         'link': "http://example.com/instrument.pdf",
     }
     defaults.update(params)
@@ -112,3 +110,34 @@ class PrivateInstrumentApiTests(TestCase):
 
         serializer = InstrumentDetailSerializer(instrument)
         self.assertEqual(res.data, serializer.data)
+
+    def test_create_instrument(self):
+        """Test creating an instrument."""
+        payload = {
+            'tag': "11-FV-01",
+            'unit': "1100",
+            'description': "GO FLOW",
+            'type': "CONTROL VALVE",
+            'manufacturer': "EMERSON",
+            'serial_no': "123456EU",
+            'interval': 100,
+            # 'created_at': datetime.now().replace(microsecond=0),
+            'created_at': timezone.now(),
+            'last_checked': timezone.make_aware(datetime(2021, 1, 1)),
+            'notes': "01/01/2020: Created" + "\n" + "01/01/2021: Changed",
+            'link': "http://example.com/instrument.pdf",
+        }
+        res = self.client.post(INSTRUMENTS_URL, payload)
+        print(res.data)
+
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        instrument = Instrument.objects.get(id=res.data['id'])
+        # for k, v in payload.items():
+        #     self.assertEqual(getattr(instrument, k), v)
+        # self.assertEqual(instrument.user, self.user)
+        for k, v in payload.items():
+            if isinstance(v, datetime):
+                self.assertEqual(getattr(instrument, k).replace(microsecond=0), v.replace(microsecond=0))
+            else:
+                self.assertEqual(getattr(instrument, k), v)
+

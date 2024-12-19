@@ -11,7 +11,8 @@ class InstrumentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Instrument
-        fields = ['tag',
+        fields = ['id',
+                  'tag',
                   'unit',
                   'description',
                   'type',

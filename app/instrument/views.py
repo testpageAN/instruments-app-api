@@ -27,3 +27,7 @@ class InstrumentViewSet(viewsets.ModelViewSet):
             return serializers.InstrumentSerializer
 
         return self.serializer_class
+
+    def perform_create(self, serializer):
+        """Create a new instrument."""
+        serializer.save(user=self.request.user)
