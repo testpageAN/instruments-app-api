@@ -137,7 +137,9 @@ class PrivateInstrumentApiTests(TestCase):
         # self.assertEqual(instrument.user, self.user)
         for k, v in payload.items():
             if isinstance(v, datetime):
-                self.assertEqual(getattr(instrument, k).replace(microsecond=0), v.replace(microsecond=0))
+                self.assertEqual(
+                    getattr(instrument, k).replace(microsecond=0),
+                    v.replace(microsecond=0)
+                )
             else:
                 self.assertEqual(getattr(instrument, k), v)
-
