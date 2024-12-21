@@ -19,9 +19,9 @@ from instrument.serializers import (
     InstrumentDetailSerializer,
 )
 
-from rest_framework.test import APITestCase
-from django.core.files.uploadedfile import SimpleUploadedFile
-import io
+from rest_framework.test import APITestCase  # noqa
+from django.core.files.uploadedfile import SimpleUploadedFile  # noqa
+import io  # noqa
 
 INSTRUMENTS_URL = reverse('instrument:instrument-list')
 # BULK_UPLOAD_URL = reverse('instrument:bulk-upload')
@@ -211,7 +211,8 @@ class PrivateInstrumentApiTests(TestCase):
             # 'created_at': datetime.now().replace(microsecond=0),
             'created_at': timezone.now(),
             'last_checked': timezone.make_aware(datetime(2021, 1, 1)),
-            'notes': "01/01/2020: Created_NEW" + "\n" + "01/01/2021: Changed_NEW",
+            'notes': "01/01/2020: Created_NEW" + "\n" +
+                     "01/01/2021: Changed_NEW",
             'link': "http://example.com/instrument_NEW.pdf",
         }
         url = detail_url(instrument.id)
@@ -279,29 +280,42 @@ class PrivateInstrumentApiTests(TestCase):
 #         self.bulk_upload_url = reverse('instrument:bulk-upload')
 #
 #     def test_bulk_upload_with_valid_csv(self):
-#         # csv_content = io.BytesIO(b"name,age,email\nJohn Doe,30,john@example.com\nJane Smith,25,jane@example.com")
-#         csv_content = io.BytesIO( b"tag,unit,description,type,manufacturer,serial_no,interval,created_at,last_checked,notes,link\n"
-#             b"11-FV-01,1100,GO FLOW,CONTROL VALVE,EMERSON,123456EU,100,2024-12-21T12:00:00Z,2021-01-01T00:00:00Z,'noted',http://example.com/instrument.pdf\n"
-#             b"11-FV-02,1200,GO FLOW 2,CONTROL VALVE,EMERSON,123457EU,102,2024-12-21T12:00:00Z,2021-01-02T00:00:00Z,'noted',http://example.com/instrument_2.pdf")
-#         csv_file = SimpleUploadedFile("test.csv", csv_content.getvalue(), content_type="text/csv")
+#         # csv_content = io.BytesIO(b"name,age,email\nJohn Doe,30,
+#         john@example.com\nJane Smith,25,jane@example.com")
+#         csv_content = io.BytesIO( b"tag,unit,description,type,manufacturer,
+#         serial_no,interval,created_at,last_checked,
+#         notes,link\n"
+#             b"11-FV-01,1100,GO FLOW,CONTROL VALVE,EMERSON,123456EU,100,
+#             2024-12-21T12:00:00Z,2021-01-01T00:00:00Z,
+#             'noted',http://example.com/instrument.pdf\n"
+#             b"11-FV-02,1200,GO FLOW 2,CONTROL VALVE,EMERSON,123457EU,
+#             102,2024-12-21T12:00:00Z,2021-01-02T00:00:00Z,
+#             'noted',http://example.com/instrument_2.pdf")
+#         csv_file = SimpleUploadedFile("test.csv", csv_content.getvalue(),
+#         content_type="text/csv")
 #
-#         response = self.client.post(self.bulk_upload_url, {'file': csv_file}, format='multipart')
+#         response = self.client.post(self.bulk_upload_url,
+#         {'file': csv_file}, format='multipart')
 #         print(response.status_code)
-#         print(response.data)  # Εκτυπώνει τα σφάλματα που επιστρέφει ο serializer
+#         print(response.data)  # Εκτυπώνει σφάλματα serializer
 #         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 #         self.assertEqual(Instrument.objects.count(), 2)
 #         self.assertEqual(response.data['message'], "Bulk upload successful")
 #
 #     def test_bulk_upload_with_no_file(self):
-#         response = self.client.post(self.bulk_upload_url, {}, format='multipart')
+#         response = self.client.post(self.bulk_upload_url, {},
+#         format='multipart')
 #         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 #         self.assertIn('No file provided', response.data['error'])
 #
 #     def test_bulk_upload_with_invalid_data(self):
-#         csv_content = io.BytesIO(b"name,age,email\nJohn Doe,not_a_number,john@example.com")
-#         csv_file = SimpleUploadedFile("invalid.csv", csv_content.getvalue(), content_type="text/csv")
+#         csv_content = io.BytesIO(b"name,age,email\nJohn Doe,not_a_number,
+#         john@example.com")
+#         csv_file = SimpleUploadedFile("invalid.csv", csv_content.getvalue(),
+#         content_type="text/csv")
 #
-#         response = self.client.post(self.bulk_upload_url, {'file': csv_file}, format='multipart')
+#         response = self.client.post(self.bulk_upload_url, {'file': csv_file},
+#         format='multipart')
 #         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 #         self.assertIn('errors', response.data)
 #         self.assertEqual(Instrument.objects.count(), 0)

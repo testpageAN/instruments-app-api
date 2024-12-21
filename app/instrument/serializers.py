@@ -9,7 +9,7 @@ from core.models import Instrument
 class InstrumentSerializer(serializers.ModelSerializer):
     """Serializer for instruments."""
     # last_checked = serializers.DateTimeField(format="%Y-%m-%dT%H:%M:%S%z",
-    #                                          input_formats=["%Y-%m-%dT%H:%M:%S%z", "%Y-%m-%d"])
+    # input_formats=["%Y-%m-%dT%H:%M:%S%z", "%Y-%m-%d"])
 
     class Meta:
         model = Instrument
