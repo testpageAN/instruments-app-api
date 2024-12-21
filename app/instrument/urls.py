@@ -17,5 +17,6 @@ router.register('instruments', views.InstrumentViewSet)
 app_name = 'instrument'
 
 urlpatterns = [
+    # path('instruments/bulk-upload/', views.BulkUploadView.as_view(), name='bulk-upload'),
     path('', include(router.urls)),
 ]

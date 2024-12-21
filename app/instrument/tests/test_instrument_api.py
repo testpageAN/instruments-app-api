@@ -19,8 +19,12 @@ from instrument.serializers import (
     InstrumentDetailSerializer,
 )
 
+from rest_framework.test import APITestCase
+from django.core.files.uploadedfile import SimpleUploadedFile
+import io
 
 INSTRUMENTS_URL = reverse('instrument:instrument-list')
+# BULK_UPLOAD_URL = reverse('instrument:bulk-upload')
 
 
 def detail_url(instrument_id):
@@ -49,6 +53,11 @@ def create_instrument(user, **params):
     return instrument
 
 
+def create_user(**params):
+    """Create and return a new user."""
+    return get_user_model().objects.create_user(**params)
+
+
 class PublicInstrumentAPITests(TestCase):
     """Test unauthenticated API requests."""
 
@@ -67,10 +76,11 @@ class PrivateInstrumentApiTests(TestCase):
 
     def setUp(self):
         self.client = APIClient()
-        self.user = get_user_model().objects.create_user(
-            'user@example.com',
-            'testpass123',
-        )
+        # self.user = get_user_model().objects.create_user(
+        #     'user@example.com',
+        #     'testpass123',
+        # )
+        self.user = create_user(email='user@example.com', password='test123')
         self.client.force_authenticate(self.user)
 
     def test_retrieve_instruments(self):
@@ -87,10 +97,11 @@ class PrivateInstrumentApiTests(TestCase):
 
     def test_instrument_list_limited_to_user(self):
         """Test list of instruments is limited to authenticated user."""
-        other_user = get_user_model().objects.create_user(
-            'other@example.com',
-            'password123',
-        )
+        # other_user = get_user_model().objects.create_user(
+        #     'other@example.com',
+        #     'password123',
+        # )
+        other_user = create_user(email='other@example.com', password='test123')
         create_instrument(user=other_user)
         create_instrument(user=self.user)
 
@@ -143,3 +154,154 @@ class PrivateInstrumentApiTests(TestCase):
                 )
             else:
                 self.assertEqual(getattr(instrument, k), v)
+
+    def test_partial_update(self):
+        """Test partial update of a instrument."""
+        original_link = 'https://example.com/instrument.pdf'
+        instrument = create_instrument(
+            user=self.user,
+            link=original_link,
+            tag="11-FV-01",
+            unit="1100",
+            description="GO FLOW",
+            type="CONTROL VALVE",
+            manufacturer="EMERSON",
+            serial_no="123456EU",
+            interval=100,
+            created_at=timezone.make_aware(datetime(2020, 1, 1)),
+            last_checked=timezone.make_aware(datetime(2021, 1, 1)),
+            notes="01/01/2020: Created" + "\n" + "01/01/2021: Changed" + "\n",
+        )
+
+        payload = {'tag': 'NEW_11-FV-01_NEW'}
+        url = detail_url(instrument.id)
+        res = self.client.patch(url, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        instrument.refresh_from_db()
+        self.assertEqual(instrument.tag, payload['tag'])
+        self.assertEqual(instrument.link, original_link)
+        self.assertEqual(instrument.user, self.user)
+
+    def test_full_update(self):
+        """Test full update of instrument."""
+        instrument = create_instrument(
+            user=self.user,
+            link="http://example.com/instrument.pdf",
+            tag="11-FV-01",
+            unit="1100",
+            description="GO FLOW",
+            type="CONTROL VALVE",
+            manufacturer="EMERSON",
+            serial_no="123456EU",
+            interval=100,
+            created_at=timezone.make_aware(datetime(2020, 1, 1)),
+            last_checked=timezone.make_aware(datetime(2021, 1, 1)),
+            notes="01/01/2020: Created" + "\n" + "01/01/2021: Changed" + "\n",
+        )
+
+        payload = {
+            'tag': "11-FV-01_NEW",
+            'unit': "1100_NEW",
+            'description': "GO FLOW_NEW",
+            'type': "CONTROL VALVE_NEW",
+            'manufacturer': "EMERSON_NEW",
+            'serial_no': "123456EU_NEW",
+            'interval': 111,
+            # 'created_at': datetime.now().replace(microsecond=0),
+            'created_at': timezone.now(),
+            'last_checked': timezone.make_aware(datetime(2021, 1, 1)),
+            'notes': "01/01/2020: Created_NEW" + "\n" + "01/01/2021: Changed_NEW",
+            'link': "http://example.com/instrument_NEW.pdf",
+        }
+        url = detail_url(instrument.id)
+        res = self.client.put(url, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        instrument.refresh_from_db()
+        # for k, v in payload.items():
+        #     self.assertEqual(getattr(instrument, k), v)
+        # self.assertEqual(instrument.user, self.user)
+        for k, v in payload.items():
+            if isinstance(v, datetime):
+                self.assertEqual(
+                    getattr(instrument, k).replace(microsecond=0),
+                    v.replace(microsecond=0)
+                )
+            else:
+                self.assertEqual(getattr(instrument, k), v)
+
+    def test_update_user_returns_error(self):
+        """Test changing the instrument user results in an error."""
+        new_user = create_user(email='user2@example.com', password='test123')
+        instrument = create_instrument(user=self.user)
+
+        payload = {'user': new_user.id}
+        url = detail_url(instrument.id)
+        self.client.patch(url, payload)
+
+        instrument.refresh_from_db()
+        self.assertEqual(instrument.user, self.user)
+
+    def test_delete_instrument(self):
+        """Test deleting a instrument successful."""
+        instrument = create_instrument(user=self.user)
+
+        url = detail_url(instrument.id)
+        res = self.client.delete(url)
+
+        self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Instrument.objects.filter(id=instrument.id).exists())
+
+    def test_instrument_other_users_instrument_error(self):
+        """Test trying to delete another users instrument gives error."""
+        new_user = create_user(email='user2@example.com', password='test123')
+        instrument = create_instrument(user=new_user)
+
+        url = detail_url(instrument.id)
+        res = self.client.delete(url)
+
+        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertTrue(Instrument.objects.filter(id=instrument.id).exists())
+
+
+# class BulkUploadAPITests(TestCase):
+#     """Bulk uploads test cases."""
+#
+#     def setUp(self):
+#         self.client = APIClient()
+#         # self.user = get_user_model().objects.create_user(
+#         #     'user@example.com',
+#         #     'testpass123',
+#         # )
+#         self.user = create_user(email='user@example.com', password='test123')
+#         self.client.force_authenticate(self.user)
+#         self.bulk_upload_url = reverse('instrument:bulk-upload')
+#
+#     def test_bulk_upload_with_valid_csv(self):
+#         # csv_content = io.BytesIO(b"name,age,email\nJohn Doe,30,john@example.com\nJane Smith,25,jane@example.com")
+#         csv_content = io.BytesIO( b"tag,unit,description,type,manufacturer,serial_no,interval,created_at,last_checked,notes,link\n"
+#             b"11-FV-01,1100,GO FLOW,CONTROL VALVE,EMERSON,123456EU,100,2024-12-21T12:00:00Z,2021-01-01T00:00:00Z,'noted',http://example.com/instrument.pdf\n"
+#             b"11-FV-02,1200,GO FLOW 2,CONTROL VALVE,EMERSON,123457EU,102,2024-12-21T12:00:00Z,2021-01-02T00:00:00Z,'noted',http://example.com/instrument_2.pdf")
+#         csv_file = SimpleUploadedFile("test.csv", csv_content.getvalue(), content_type="text/csv")
+#
+#         response = self.client.post(self.bulk_upload_url, {'file': csv_file}, format='multipart')
+#         print(response.status_code)
+#         print(response.data)  # Εκτυπώνει τα σφάλματα που επιστρέφει ο serializer
+#         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+#         self.assertEqual(Instrument.objects.count(), 2)
+#         self.assertEqual(response.data['message'], "Bulk upload successful")
+#
+#     def test_bulk_upload_with_no_file(self):
+#         response = self.client.post(self.bulk_upload_url, {}, format='multipart')
+#         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+#         self.assertIn('No file provided', response.data['error'])
+#
+#     def test_bulk_upload_with_invalid_data(self):
+#         csv_content = io.BytesIO(b"name,age,email\nJohn Doe,not_a_number,john@example.com")
+#         csv_file = SimpleUploadedFile("invalid.csv", csv_content.getvalue(), content_type="text/csv")
+#
+#         response = self.client.post(self.bulk_upload_url, {'file': csv_file}, format='multipart')
+#         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+#         self.assertIn('errors', response.data)
+#         self.assertEqual(Instrument.objects.count(), 0)
