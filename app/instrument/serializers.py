@@ -34,19 +34,3 @@ class InstrumentDetailSerializer(InstrumentSerializer):
     class Meta(InstrumentSerializer.Meta):
         # fields = InstrumentSerializer.Meta.fields + ['description_2']
         pass
-
-
-# class BulkUploadSerializer(InstrumentSerializer):
-#     """Serializer for bulk upload"""
-
-
-# class BulkUploadSerializer(serializers.ModelSerializer):
-#     """Serializer for bulk upload."""
-#
-#     class Meta:
-#         model = Instrument
-#         fields = '__all__'
-#
-#     def create(self, validated_data):
-#         validated_data['user'] = self.context['request'].user
-#         return super().create(validated_data)
